@@ -46,60 +46,81 @@ print("Agent learned!")
 # experimenting (modifing copilot code)
 import numpy as np
 import random
+import time
+import subprocess, sys
 
-Q = np.zeros((5,5))
+# Q-table: shape (5, 5, 4) → rows, cols, actions
+Q = np.zeros((5, 5, 4))
 
 learning_rate = 0.1
 discount_factor = 0.9
 episodes = 2000
 
-for episode in range(episodes):
-    position = (2,2)  # Start in the middle position (state)
-    #time = 0
-    while True:
-        if episode < 500:  # Print every 10 episodes
-            action = random.randint(0, 3)  # Pick random action
-        else :  # After 50 episodes, choose the best action based on Q-values
-            action = np.argmax([Q[(position[0], position[1] - 1)] if position[1] > 0 else -np.inf, Q[(position[0], position[1] + 1)] if position[1] < 4 else -np.inf, Q[(position[0] - 1, position[1])] if position[0] > 0 else -np.inf, Q[(position[0] + 1, position[1])] if position[0] < 4 else -np.inf])  # Best action based on Q-values
-            #print(action)
-        #time += 1
-        # Simulate environment response
-        if action == 0:  # Move left
-            position = (position[0], max(0, position[1] - 1))
-        elif action == 1:  # Move right
-            position = (position[0], min(4, position[1] + 1))
-        elif action == 2:  # Move up
-            position = (max(0, position[0] - 1), position[1])
-        elif action == 3:  # Move down
-            position = (min(4, position[0] + 1), position[1])
+OBSTACLES = {(3,1), (3,2), (3,3), (3,4)}
+GOAL = (4, 4)
 
-        if position == (4,4):
-            reward = 1
-        elif position in [(3,1), (3,2), (3,3), (3,4)]:
+def clear_screen():
+    subprocess.run(['cls' if sys.platform == 'win32' else 'clear'], check=True)
+
+def print_grid(position):
+    for i in range(5):
+        for j in range(5):
+            if (i, j) == position:
+                print("P ", end="")
+            elif (i, j) == GOAL:
+                print("G ", end="")
+            elif (i, j) in OBSTACLES:
+                print("X ", end="")
+            else:
+                print(". ", end="")
+        print()
+
+def get_next_position(position, action):
+    r, c = position
+    if action == 0: return (r, max(0, c - 1))        # left
+    if action == 1: return (r, min(4, c + 1))        # right
+    if action == 2: return (max(0, r - 1), c)        # up
+    if action == 3: return (min(4, r + 1), c)        # down
+
+for episode in range(episodes):
+    position = (2, 2)
+
+    while True:
+        # Exploration vs exploitation
+        epsilon_initial = 1.0
+        epsilon_decay = 0.995
+        epsilon_min = 0.01
+        epsilon = max(epsilon_min, epsilon_initial * (epsilon_decay ** episode))
+        if random.random() < epsilon:
+            action = random.randint(0, 3)
+        else:
+            action = np.argmax(Q[position])  # Best action from Q-table
+
+        next_position = get_next_position(position, action)
+
+        # Reward
+        if next_position == GOAL:
+            reward = 10
+        elif next_position in OBSTACLES:
             reward = -9
         else:
             reward = -1
 
-        # Q-learning update formula:
-        # Q(state, action) = Q(state, action) + learning_rate * (reward + discount_factor * max_future_Q - current_Q)
-        old_value = Q[position]
-        max_future = np.max([Q[(position[0], position[1] - 1)] if position[1] > 0 else -np.inf, Q[(position[0], position[1] + 1)] if position[1] < 4 else -np.inf, Q[(position[0] - 1, position[1])] if position[0] > 0 else -np.inf, Q[(position[0] + 1, position[1])] if position[0] < 4 else -np.inf])  # Best possible next move
-        new_value = old_value + learning_rate * (reward + discount_factor * max_future - old_value)
-        Q[position] = new_value
+        # Q-learning update: Q(s,a) += lr * (r + γ * max_Q(s') - Q(s,a))
+        best_next = np.max(Q[next_position])
+        Q[position][action] += learning_rate * (reward + discount_factor * best_next - Q[position][action])
 
-        if position == (4,4):
-            break  # Episode ends if we move right to the edge
+        position = next_position
+
+        if episode % 100 == 0:  # Print every 100 episodes
+            clear_screen()
+            print_grid(position)
+            time.sleep(0.05)
+
+        if position == GOAL:
+            break   # ends if we move right to the edge
 
     #print(f"Episode {episode + 1}: q-values = \n{Q}")
 
-print("Learned Q-values:\n", Q)
-#can i color the values?
-try:
-    import matplotlib.pyplot as plt
-    plt.imshow(Q, cmap='viridis', interpolation='nearest')
-    plt.colorbar()
-    plt.title("Learned Q-values")
-    plt.show()
-except ImportError:
-    print("Matplotlib not installed, cannot visualize Q-values.")
+
 
