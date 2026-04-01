@@ -76,11 +76,11 @@ def print_grid(position):
         print()
 
 def get_next_position(position, action):
-    r, c = position
-    if action == 0: return (r, max(0, c - 1))        # left
-    if action == 1: return (r, min(4, c + 1))        # right
-    if action == 2: return (max(0, r - 1), c)        # up
-    if action == 3: return (min(4, r + 1), c)        # down
+    y, x = position
+    if action == 0: return (y, max(0, x - 1))        # left
+    if action == 1: return (y, min(4, x + 1))        # right
+    if action == 2: return (max(0, y - 1), x)        # up
+    if action == 3: return (min(4, y + 1), x)        # down
 
 for episode in range(episodes):
     position = (2, 2)
