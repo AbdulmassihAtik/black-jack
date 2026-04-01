@@ -54,6 +54,16 @@ if input() == "yes":
     card_player.append(random.choice(deck))
 print(card_player)
 print(card_dealer)
+print("Wanna hit")
+if input() == "yes":
+    card_player.append(random.choice(deck))
+print(card_player)
+print(card_dealer)
+print("Wanna hit")
+if input() == "yes":
+    card_player.append(random.choice(deck))
+print(card_player)
+print(card_dealer)
 
 
 
