@@ -1,5 +1,7 @@
 import enum
 from random import shuffle
+#new-black-jack3
+hi = new-black-jack
 
 player_hand = []
 dealer_hand = []
